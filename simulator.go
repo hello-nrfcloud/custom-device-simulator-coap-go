@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"device-simulator-coap/lwm2m"
 	"flag"
 	"fmt"
 	"io"
@@ -20,6 +22,9 @@ import (
 	"log"
 
 	"github.com/golang-jwt/jwt"
+
+	senML "github.com/farshidtz/senml/v2"
+	senMLCodec "github.com/farshidtz/senml/v2/codec"
 )
 
 func check(e error) {
@@ -105,14 +110,47 @@ func main() {
 	// assertTrue(resp.options().maxAge > 0)
 
 	// Get the state
-	tenantResp, err := co.Get(ctx, "/state")
+	stateResp, err := co.Get(ctx, "/state")
 	check(err)
-	checkResponse(tenantResp, codes.Content)
-	data, err := io.ReadAll(tenantResp.Body())
+	checkResponse(stateResp, codes.Content)
+	data, err := io.ReadAll(stateResp.Body())
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Printf("State: %s\n", data)
+
+	// Send LwM2M Geolocation object CBOR encoded SenML
+	ts := float64(time.Now().UnixMilli())
+	lat := 62.469414
+	lng := 6.151946
+	accuracy := 1.0
+	source := "Fixed"
+	senMLPayload := senML.Pack{
+		{BaseName: fmt.Sprintf("%d/0/", lwm2m.Geolocation_14201),
+			BaseTime: ts,
+			Name:     "0", Value: &lat,
+		},
+		{Name: "1", Value: &lng},
+		{Name: "3", Value: &accuracy},
+		{Name: "6", StringValue: source},
+	}
+
+	err = senMLPayload.Validate()
+	if err != nil {
+		panic(err) // handle the error
+	}
+	senMLPayload.Normalize()
+
+	// encode the normalized SenML Pack to XML
+	dataOut, err := senMLCodec.EncodeCBOR(senMLPayload)
+	if err != nil {
+		panic(err) // handle the error
+	}
+	rawResp, err := co.Post(ctx, "/msg/d2c/raw", message.AppCBOR, bytes.NewReader(dataOut))
+	check(err)
+	checkResponse(rawResp, codes.Created)
+	log.Printf("Published location")
+
 }
 
 func checkResponse(resp *pool.Message, expected codes.Code) {
