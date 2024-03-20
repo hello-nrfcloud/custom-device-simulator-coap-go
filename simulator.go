@@ -14,6 +14,7 @@ import (
 	"github.com/plgd-dev/go-coap/v3/dtls"
 	"github.com/plgd-dev/go-coap/v3/message"
 	"github.com/plgd-dev/go-coap/v3/message/codes"
+	"github.com/plgd-dev/go-coap/v3/message/pool"
 
 	"crypto/ecdsa"
 	"log"
@@ -50,8 +51,6 @@ func createJWTToken(deviceID string) (string, error) {
 
 	expirationTime := time.Now().Add(10 * time.Minute).Unix()
 
-	fmt.Println("Expires", expirationTime)
-
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, jwt.StandardClaims{
 		Subject:   deviceID,
 		ExpiresAt: expirationTime,
@@ -73,66 +72,51 @@ func main() {
 		log.Fatal("Must provide a deviceId!")
 	}
 
-	fmt.Println("DeviceID:", *deviceId)
+	log.Println("DeviceID:", *deviceId)
 
 	token, err := createJWTToken(*deviceId)
 	if err != nil {
 		log.Fatalf("Failed to create JWT token: %v", err)
 	}
 
-	fmt.Println("JWT Token:", token)
+	log.Println("JWT Token:", token)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Connect to a DTLS server
 	co, err := dtls.Dial("coap.nrfcloud.com:5684", &piondtls.Config{
-		InsecureSkipVerify: true,
+		InsecureSkipVerify:    true,
+		ConnectionIDGenerator: piondtls.OnlySendCIDGenerator(),
 	})
 	util.Check(err)
 	defer func() {
 		util.Check(co.Close())
 	}()
 
-	fmt.Println("Connected.")
+	log.Println("Connected.")
 
 	// Authenticate
 
 	resp, err := co.Post(ctx, "/auth/jwt", message.TextPlain, strings.NewReader(token))
-	if err != nil {
-		log.Fatalf("Error sending request: %v", err)
-	}
-	for _, option := range resp.Options() {
-		fmt.Println("Option:", option.ID, option.Value)
-	}
-	if resp.Code() != codes.Created {
-		bodySize, err := resp.BodySize()
-		check(err)
-		if bodySize > 0 {
-			data, err := io.ReadAll(resp.Body())
-			if err != nil {
-				log.Fatal(err)
-			}
-			log.Printf("%s\n", data)
-		}
-		log.Fatalf("Authentication failed: %d", resp.Code())
-	}
-	fmt.Println(resp.Code())
+	check(err)
+	checkResponse(resp, codes.Created)
 	// assertEquals(Code.C201_CREATED, resp.code)
 	// assertTrue(resp.options().maxAge > 0)
 
-	/*
-		devicesPath := fmt.Sprintf("/v1/devices/%s?transform=tenantId", *deviceId)
-		fmt.Println("Path:", devicesPath)
+	// Get the state
+	tenantResp, err := co.Get(ctx, "/state")
+	check(err)
+	checkResponse(tenantResp, codes.Content)
+	data, err := io.ReadAll(tenantResp.Body())
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("State: %s\n", data)
+}
 
-		resp, err := co.Get(ctx, devicesPath)
-		if err != nil {
-			log.Fatalf("Error sending request: %v", err)
-		}
-		data, err := io.ReadAll(resp.Body())
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Printf("%s\n", data)
-	*/
+func checkResponse(resp *pool.Message, expected codes.Code) {
+	if resp.Code() != expected {
+		panic(fmt.Sprintf(`Request failed: %d`, resp.Code()))
+	}
 }
