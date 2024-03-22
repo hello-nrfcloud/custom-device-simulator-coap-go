@@ -122,6 +122,7 @@ func main() {
 	log.Printf("State: %s\n", data)
 
 	// Send LwM2M Geolocation object CBOR encoded SenML
+	// See https://github.com/hello-nrfcloud/proto-map/blob/21395447c6b01f76c2ec42ef5f1451b32707f58f/lwm2m/14201.xml
 	ts := float64(time.Now().UnixMilli())
 	lat := 62.469414
 	lng := 6.151946
