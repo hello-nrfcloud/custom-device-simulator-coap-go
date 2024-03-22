@@ -142,7 +142,6 @@ func main() {
 	if err != nil {
 		panic(err) // handle the error
 	}
-	senMLPayload.Normalize()
 
 	// encode the normalized SenML Pack to XML
 	dataOut, err := senMLCodec.EncodeCBOR(senMLPayload)
