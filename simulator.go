@@ -25,6 +25,8 @@ import (
 
 	senML "github.com/farshidtz/senml/v2"
 	senMLCodec "github.com/farshidtz/senml/v2/codec"
+
+	"encoding/hex"
 )
 
 func check(e error) {
@@ -146,6 +148,11 @@ func main() {
 	if err != nil {
 		panic(err) // handle the error
 	}
+
+	// Convert dataOut to hex string
+	dataOutHex := hex.EncodeToString(dataOut)
+	log.Printf("> /msg/d2c/raw: %s (hex encoded)\n", dataOutHex)
+
 	rawResp, err := co.Post(ctx, "/msg/d2c/raw", message.AppCBOR, bytes.NewReader(dataOut))
 	check(err)
 	checkResponse(rawResp, codes.Created)
