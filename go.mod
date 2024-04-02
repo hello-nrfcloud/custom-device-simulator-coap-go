@@ -1,6 +1,6 @@
 module device-simulator-coap
 
-go 1.21.6
+go 1.22.1
 
 require (
 	github.com/farshidtz/senml/v2 v2.0.0
