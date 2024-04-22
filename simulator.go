@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"device-simulator-coap/lwm2m"
 	"flag"
 	"fmt"
 	"io"
@@ -23,7 +22,6 @@ import (
 
 	"github.com/golang-jwt/jwt"
 
-	senML "github.com/farshidtz/senml/v2"
 	senMLCodec "github.com/farshidtz/senml/v2/codec"
 
 	"encoding/hex"
@@ -35,8 +33,7 @@ func check(e error) {
 	}
 }
 
-func loadPrivateKey(deviceID string) (*ecdsa.PrivateKey, error) {
-	privateKeyPath := fmt.Sprintf("certificates/%s.key", deviceID)
+func loadPrivateKey(privateKeyPath string) (*ecdsa.PrivateKey, error) {
 	privateKeyBytes, err := os.ReadFile(privateKeyPath)
 	if err != nil {
 		return nil, err
@@ -50,8 +47,8 @@ func loadPrivateKey(deviceID string) (*ecdsa.PrivateKey, error) {
 	return privateKey, nil
 }
 
-func createJWTToken(deviceID string) (string, error) {
-	privateKey, err := loadPrivateKey(deviceID)
+func createJWTToken(privateKeyPath string, deviceID string) (string, error) {
+	privateKey, err := loadPrivateKey(privateKeyPath)
 	if err != nil {
 		log.Fatalf("Failed to load private key: %v", err)
 	}
@@ -73,15 +70,32 @@ func createJWTToken(deviceID string) (string, error) {
 
 func main() {
 	deviceId := flag.String("deviceId", "", "The client ID.")
+	privateKeyPath := flag.String("privateKey", "", "The private key file")
 	flag.Parse()
 
 	if *deviceId == "" {
 		log.Fatal("Must provide a deviceId!")
 	}
-
 	log.Println("DeviceID:", *deviceId)
 
-	token, err := createJWTToken(*deviceId)
+	// Read JSON from stdin
+	senMLJSON, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		panic(err) // handle the error
+	}
+
+	senMLPayload, err := senMLCodec.DecodeJSON([]byte(senMLJSON))
+	if err != nil {
+		panic(err) // handle the error
+	}
+
+	// validate the SenML Pack
+	err = senMLPayload.Validate()
+	if err != nil {
+		panic(err) // handle the error
+	}
+
+	token, err := createJWTToken(*privateKeyPath, *deviceId)
 	if err != nil {
 		log.Fatalf("Failed to create JWT token: %v", err)
 	}
@@ -119,31 +133,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("State: %s\n", data)
+	log.Printf("< State: %s\n", data)
 
-	// Send LwM2M Geolocation object CBOR encoded SenML
-	// See https://github.com/hello-nrfcloud/proto-map/blob/21395447c6b01f76c2ec42ef5f1451b32707f58f/lwm2m/14201.xml
-	ts := float64(time.Now().UnixMilli())
-	lat := 62.469414
-	lng := 6.151946
-	accuracy := 1.0
-	source := "Fixed"
-	senMLPayload := senML.Pack{
-		{BaseName: fmt.Sprintf("%d/0/", lwm2m.Geolocation_14201),
-			BaseTime: ts,
-			Name:     "0", Value: &lat,
-		},
-		{Name: "1", Value: &lng},
-		{Name: "3", Value: &accuracy},
-		{Name: "6", StringValue: source},
-	}
-
-	err = senMLPayload.Validate()
-	if err != nil {
-		panic(err) // handle the error
-	}
-
-	// encode the normalized SenML Pack to XML
+	// encode the normalized SenML Pack to CBOR
 	dataOut, err := senMLCodec.EncodeCBOR(senMLPayload)
 	if err != nil {
 		panic(err) // handle the error
@@ -152,11 +144,11 @@ func main() {
 	// Convert dataOut to hex string
 	dataOutHex := hex.EncodeToString(dataOut)
 	log.Printf("> /msg/d2c/raw: %s (hex encoded)\n", dataOutHex)
+	log.Printf("> %s", senMLJSON)
 
 	rawResp, err := co.Post(ctx, "/msg/d2c/raw", message.AppCBOR, bytes.NewReader(dataOut))
 	check(err)
 	checkResponse(rawResp, codes.Created)
-	log.Printf("Published location")
 
 }
 

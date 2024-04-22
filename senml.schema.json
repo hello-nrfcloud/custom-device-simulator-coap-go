@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SenML JSON Representation (application/senml+json)",
+  "description": "See https://datatracker.ietf.org/doc/html/rfc8428#section-5",
+  "type": "object",
+  "properties": {
+    "SenML": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "bn": {
+            "title": "Base Name",
+            "type": "string",
+            "examples": ["14201/0"]
+          },
+          "bt": {
+            "title": "Base Time",
+            "type": "number",
+            "examples": [1713777751986]
+          },
+          "bu": { "title": "Base Unit", "type": "string" },
+          "bv": { "title": "Base Value", "type": "number" },
+          "bs": { "title": "Base Sum", "type": "number" },
+          "bver": { "title": "Base Version", "type": "number" },
+          "n": {
+            "title": "Name",
+            "type": "string",
+            "examples": ["0", "1", "3"]
+          },
+          "u": { "title": "Unit", "type": "string" },
+          "v": {
+            "title": "Value",
+            "type": "number",
+            "examples": [62.469414, 6.151946, 1.0]
+          },
+          "vs": {
+            "title": "String Value ",
+            "type": "string",
+            "examples": ["Fixed"]
+          },
+          "vb": { "title": " Value", "type": "boolean" },
+          "vd": { "title": "Data Value", "type": "string" },
+          "s": { "title": "Sum", "type": "number" },
+          "t": { "title": "Time", "type": "number" },
+          "ut": { "title": "Update Time", "type": "number" }
+        },
+        "required": [],
+        "minItems": 1
+      }
+    }
+  },
+  "required": ["SenML"]
+}
