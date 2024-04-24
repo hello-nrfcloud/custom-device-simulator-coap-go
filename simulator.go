@@ -128,18 +128,18 @@ func getState(co *udpClient.Conn) {
 	opts := message.Options{
 		{
 			ID:    message.Accept,
-			Value: []byte{0x3C}, // 60 CBOR
+			Value: []byte{byte(message.AppCBOR)}, 
 		},
 		{
 			ID:    message.ContentFormat,
-			Value: []byte{0x3C}, // 60 CBOR
+			Value: []byte{byte(message.AppCBOR)}, 
 		},
 	}
-	log.Printf("> %d: %d\n", opts[0].ID, opts[0].Value)
-	log.Printf("> %d: %d\n", opts[1].ID, opts[1].Value)
+	log.Printf("> Option %d: %d\n", opts[0].ID, opts[0].Value)
+	log.Printf("> Option %d: %d\n", opts[1].ID, opts[1].Value)
 
 	// Get the state
-	 stateResp, err := co.Get(ctx, "/state", opts...)
+	stateResp, err := co.Get(ctx, "/state", opts...)
 	check(err)
 	checkResponse(stateResp, codes.Content)
 	data, err := io.ReadAll(stateResp.Body())
