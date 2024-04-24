@@ -90,6 +90,7 @@ func main() {
 	co, err := dtls.Dial("coap.nrfcloud.com:5684", &piondtls.Config{
 		InsecureSkipVerify:    true,
 		ConnectionIDGenerator: piondtls.OnlySendCIDGenerator(),
+		
 	})
 	util.Check(err)
 	defer func() {
@@ -123,13 +124,22 @@ func getState(co *udpClient.Conn) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	// accept
+	opts := message.Options{
+		{
+			ID:    message.Accept,
+			Value: []byte{0x3C}, // 60 CBOR
+		},
+		{
+			ID:    message.ContentFormat,
+			Value: []byte{0x3C}, // 60 CBOR
+		},
+	}
+	log.Printf("> %d: %d\n", opts[0].ID, opts[0].Value)
+	log.Printf("> %d: %d\n", opts[1].ID, opts[1].Value)
+
 	// Get the state
-	// options := []message.Option{
-	// 	{ID: message.Accept, Value: []byte(message.TextPlain.String())},
-	// 	{ID: message.URIQuery, Value: []byte("?transform=pairing")},
-	// }
-	// stateResp, err := co.Get(ctx, "/state", options...)
-	stateResp, err := co.Get(ctx, "/state")
+	 stateResp, err := co.Get(ctx, "/state", opts...)
 	check(err)
 	checkResponse(stateResp, codes.Content)
 	data, err := io.ReadAll(stateResp.Body())
