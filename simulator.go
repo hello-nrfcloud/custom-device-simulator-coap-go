@@ -131,12 +131,12 @@ func getState(co *udpClient.Conn) {
 			Value: []byte{byte(message.AppCBOR)}, 
 		},
 		{
-			ID:    message.ContentFormat,
-			Value: []byte{byte(message.AppCBOR)}, 
+			ID: message.URIQuery,
+			Value: []byte("delta=false"),
 		},
 	}
 	log.Printf("> Option %d: %d\n", opts[0].ID, opts[0].Value)
-	log.Printf("> Option %d: %d\n", opts[1].ID, opts[1].Value)
+	log.Printf("> Option %d: %s\n", opts[1].ID, opts[1].Value)
 
 	// Get the state
 	stateResp, err := co.Get(ctx, "/state", opts...)
