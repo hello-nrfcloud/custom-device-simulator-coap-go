@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/pem"
 	"flag"
 	"fmt"
 	"io"
@@ -40,7 +41,10 @@ func loadPrivateKey(privateKeyPath string) (*ecdsa.PrivateKey, error) {
 		return nil, err
 	}
 
-	privateKey, err := jwt.ParseECPrivateKeyFromPEM(privateKeyBytes)
+	// Strip params
+	_, rest := pem.Decode(privateKeyBytes)
+
+	privateKey, err := jwt.ParseECPrivateKeyFromPEM(rest)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +94,6 @@ func main() {
 	co, err := dtls.Dial("coap.nrfcloud.com:5684", &piondtls.Config{
 		InsecureSkipVerify:    true,
 		ConnectionIDGenerator: piondtls.OnlySendCIDGenerator(),
-		
 	})
 	util.Check(err)
 	defer func() {
@@ -128,10 +131,10 @@ func getState(co *udpClient.Conn) {
 	opts := message.Options{
 		{
 			ID:    message.Accept,
-			Value: []byte{byte(message.AppCBOR)}, 
+			Value: []byte{byte(message.AppCBOR)},
 		},
 		{
-			ID: message.URIQuery,
+			ID:    message.URIQuery,
 			Value: []byte("delta=false"),
 		},
 	}
