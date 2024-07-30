@@ -16,4 +16,4 @@ go build
 
 See [senml.schema.json](./senml.schema.json) for the expected SenML JSON format.
 
-The key file should be a private key as PEM, without EC params (they are not supported by pion/dtls).
+The key file should be a private key as PEM.

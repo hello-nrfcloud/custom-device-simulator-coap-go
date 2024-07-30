@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	piondtlsv2 "github.com/pion/dtls/v2"
 	piondtls "github.com/pion/dtls/v3"
 	"github.com/pion/dtls/v3/examples/util"
 	"github.com/plgd-dev/go-coap/v3/dtls"
@@ -91,7 +92,7 @@ func main() {
 	log.Println("JWT Token:", token)
 
 	// Connect to a DTLS server
-	co, err := dtls.Dial("coap.nrfcloud.com:5684", &piondtls.Config{
+	co, err := dtls.Dial("coap.nrfcloud.com:5684", &piondtlsv2.Config{
 		InsecureSkipVerify:    true,
 		ConnectionIDGenerator: piondtls.OnlySendCIDGenerator(),
 	})
