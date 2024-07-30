@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	piondtls "github.com/pion/dtls/v2"
-	"github.com/pion/dtls/v2/examples/util"
+	piondtls "github.com/pion/dtls/v3"
+	"github.com/pion/dtls/v3/examples/util"
 	"github.com/plgd-dev/go-coap/v3/dtls"
 	"github.com/plgd-dev/go-coap/v3/message"
 	"github.com/plgd-dev/go-coap/v3/message/codes"
